@@ -2,92 +2,129 @@
 
 Vale para **claude.ai/code**, o app de celular, o Desktop, o `claude --cloud` do terminal, as rotinas e o Claude Tag — todos rodam o mesmo tipo de sessão em máquina descartável.
 
-## Por que aqui é diferente
+## A regra que manda aqui
 
-A sessão de nuvem **nasce do zero toda vez**: uma VM nova, um clone novo do repositório, e nada do que está instalado na sua máquina. Por isso:
+A sessão de nuvem **nasce do zero toda vez**: VM nova, clone novo, `~/.claude` vazio. E o carregamento de plugin acontece **no start da sessão**, antes de qualquer coisa que rode dentro dela. Disso sai a única regra que importa:
 
-- **`/plugin` não existe na sessão de nuvem.** Não dá para instalar à mão lá dentro.
-- **O que está no repositório, está na sessão.** `CLAUDE.md`, `.claude/settings.json`, `.claude/skills/` — tudo que foi commitado chega.
-- **Plugin declarado no `.claude/settings.json` do projeto é instalado no início da sessão**, direto do marketplace, com acesso de rede ao GitHub.
+> **O plugin tem que estar instalado antes de a sessão começar. O que instala depois só vale na sessão seguinte — e não existe sessão seguinte na mesma VM.**
 
-Essas três coisas juntas dão de graça o que a esteira precisa: **a sessão de nuvem sempre abre com a última versão publicada do `san-co`.** Não existe "atualizar" na nuvem — existe abrir sessão. Publicou versão nova aqui, a próxima sessão de qualquer projeto já entra com ela.
+O lugar que roda antes do Claude Code subir é o **script de setup do ambiente de nuvem**. É lá que o plugin entra.
 
-## O que fazer — uma vez por projeto
+## O que **não** basta (e por que)
 
-### 1. Declarar o marketplace e o plugin
+Declarar o plugin no `.claude/settings.json` do projeto **registra o marketplace e marca o plugin como habilitado, mas não o instala.** A sessão abre sem as skills.
 
-No repositório **do projeto** (não neste), crie ou edite `.claude/settings.json`:
+Isto foi testado num container de sessão de nuvem, Claude Code 2.1.270, com o arquivo correto e commitado:
+
+```
+$ cat .claude/settings.json      # extraKnownMarketplaces + enabledPlugins, corretos
+$ claude -p "liste as skills do plugin san-co"
+NENHUMA
+$ claude plugin list
+No plugins installed.
+```
+
+Se uma sessão sua disser que não encontra `san-co:leis`, `san-co:construir` e as outras, **ela está certa e não é culpa dela** — é isto aqui. O arquivo continua valendo (ver "O que o arquivo do projeto ainda faz"), só não é suficiente sozinho.
+
+## O que funciona: duas linhas no script do ambiente
+
+Em [claude.ai/code](https://claude.ai/code), no seletor de ambiente → engrenagem do ambiente → campo **Setup script**:
+
+```bash
+claude plugin marketplace add sancompany/Plugin_san-co
+claude plugin install san-co@san-co
+```
+
+Está pronto em [`exemplos/setup-ambiente-nuvem.sh`](../exemplos/setup-ambiente-nuvem.sh), com as duas linhas idempotentes.
+
+Testado no mesmo container, rodando os dois comandos antes da sessão, num projeto **sem nenhum `.claude/`**:
+
+```
+$ claude -p "liste as skills do plugin san-co"
+checkout, classificar, construir, depurar, legal, leis, novo-projeto,
+revisar, seguranca-san
+```
+
+As nove skills, em qualquer projeto daquele ambiente, sem arquivo nenhum no repositório. **Uma configuração por pessoa, e não uma por projeto** — que é melhor do que o desenho anterior prometia.
+
+## A versão que chega, e como forçar a atualização
+
+O ambiente guarda um **snapshot do disco depois que o script de setup roda**, e as sessões seguintes partem dele **sem rodar o script de novo**. Ou seja: a versão do plugin congela no snapshot. O snapshot é refeito quando o script de setup muda, quando a lista de domínios do ambiente muda, ou sozinho depois de uns sete dias.
+
+Para uma esteira que publica com frequência, isso dá o gesto que o mantenedor controla: **publicou versão e quer que entre já, edite o script de setup.** Basta mudar o comentário da versão — é por isso que o exemplo tem uma linha `# san-co 1.2.2` no topo. Editar o campo já refaz o snapshot, e a sessão seguinte de todo mundo entra com a versão nova.
+
+Duas coisas que ajudam, e que valem só a partir da **próxima** sessão (o Claude Code carrega plugin no start; o que instala depois fica para o próximo start):
+
+- um **SessionStart hook** no `.claude/settings.json` do projeto rodando `claude plugin install san-co@san-co` — o comando com o nome do marketplace junto sempre puxa o catálogo antes de instalar;
+- o auto-update de marketplace, que no terminal é um botão, e aqui não tem interface.
+
+Por isso o gesto de editar o script continua sendo o caminho determinístico.
+
+## Quando a sessão já está aberta e sem o plugin
+
+Dentro da sessão, peça para rodar:
+
+```bash
+claude plugin marketplace add sancompany/Plugin_san-co
+claude plugin install san-co@san-co
+```
+
+Depois disso, `/reload-plugins` digitado direto na caixa da sessão costuma carregar as skills na hora. Se não carregar, **abra uma sessão nova** — a instalação já está no disco daquela VM e a sessão seguinte abre com tudo. Para não repetir isso, ponha as duas linhas no script do ambiente.
+
+## O que o arquivo do projeto ainda faz
+
+Continua valendo a pena commitar isto no `.claude/settings.json` do projeto ([`exemplos/projeto-claude-settings.json`](../exemplos/projeto-claude-settings.json)):
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "san-co": {
-      "source": {
-        "source": "github",
-        "repo": "sancompany/Plugin_san-co"
-      }
-    }
+    "san-co": { "source": { "source": "github", "repo": "sancompany/Plugin_san-co" } }
   },
-  "enabledPlugins": {
-    "san-co@san-co": true
-  }
+  "enabledPlugins": { "san-co@san-co": true }
 }
 ```
 
-O arquivo pronto está em [`exemplos/projeto-claude-settings.json`](../exemplos/projeto-claude-settings.json).
+Ele faz três coisas reais: registra o marketplace sem ninguém digitar comando, deixa o plugin habilitado quando ele existe, e é o que faz o Claude Code **do terminal e do VS Code** herdar tudo ao confiar na pasta ([instalar-terminal.md](instalar-terminal.md)). O que ele **não** faz é instalar na nuvem.
 
-Se o projeto já tem um `.claude/settings.json`, **acrescente as duas chaves** ao objeto que já existe em vez de substituir o arquivo.
+## O caminho sem repositório e sem script: a conta claude.ai
 
-### 2. Commitar e subir
+Skill e plugin ligados na **conta claude.ai** (barra lateral → **Customize**) são baixados sozinhos em toda sessão de nuvem e do Cowork, a cada sessão, sem marketplace e sem cache — é o mecanismo dos *synced plugins*, que vivem em `~/.claude/plugins/synced/`. Se o `san-co` puder ser ligado por aí na sua conta, é o desenho mais limpo dos três: nada no ambiente, nada no projeto, e sempre a versão corrente.
 
-```bash
-git add .claude/settings.json
-git commit -m "Ativa o plugin san-co nas sessões de código"
-git push
-```
+Não consegui testar isso daqui — depende do que a sua conta oferece nessa tela. Se a opção existir, vale experimentar antes do script de setup; se não existir, o script de setup é o caminho.
 
-O plugin é instalado a partir do que está **no branch que a sessão clona**. Enquanto o commit não estiver no branch, a sessão não vê.
+## Rede
 
-### 3. Conferir numa sessão nova
-
-Abra uma sessão de nuvem no projeto e peça:
-
-> Quais skills do plugin san-co estão disponíveis?
-
-Ou rode `/context` e procure as skills `san-co:leis`, `san-co:construir`, `san-co:novo-projeto` e as demais. Se elas aparecem, acabou — nada mais a fazer, nem agora nem nas próximas versões.
-
-## Rede: o que o ambiente precisa liberar
-
-A sessão clona o marketplace do GitHub no início. O nível de acesso de rede **Confiável** (`Trusted`), que é o padrão do ambiente Default, já inclui `github.com`, `api.github.com`, `codeload.github.com` e `raw.githubusercontent.com` — não há nada a configurar.
-
-Se o ambiente usa acesso **Personalizado** (`Custom`) com lista própria de domínios, marque **"incluir também a lista padrão"** ou acrescente esses domínios. Com a rede desligada, o plugin não instala.
+O clone do marketplace sai pelo GitHub. O nível **Confiável** (`Trusted`), padrão do ambiente Default, já libera `github.com`, `api.github.com` e `codeload.github.com` — nada a configurar. Em ambiente **Personalizado**, marque "incluir também a lista padrão" ou acrescente esses domínios. Sem rede, o plugin não instala.
 
 ## Se este repositório for privado
 
-**Hoje ele é público, então nada aqui se aplica** — o clone do marketplace funciona em qualquer sessão, sem credencial. Esta seção existe para o dia em que alguém pensar em fechar o repositório.
+**Hoje ele é público, então nada aqui se aplica** — o clone dispensa credencial. Esta seção existe para o dia em que alguém pensar em fechar o repositório.
 
-A sessão de nuvem fala com o GitHub por um proxy que usa credencial **restrita aos repositórios anexados à sessão**. O repositório do plugin não é o repositório do projeto, então o clone do marketplace privado pode voltar 403.
+A sessão de nuvem fala com o GitHub por um proxy cuja credencial só alcança **os repositórios anexados à sessão**. O repositório do plugin não é o do projeto, então o clone do marketplace privado volta 403.
 
-Três saídas, da mais simples para a mais trabalhosa:
-
-1. **Repositório público.** O plugin não tem segredo dentro — são padrões de trabalho, não chaves nem código de produção. Público, o clone dispensa credencial e tudo funciona em qualquer superfície, sem exceção. Continua sendo você quem publica: leitura pública não dá permissão de escrita a ninguém.
-2. **Token de leitura no ambiente.** Crie um *fine-grained token* com **Contents: Read-only** só neste repositório, guarde como variável de ambiente do ambiente de nuvem (`SANCO_PLUGIN_TOKEN`) e ponha no **script de setup** do ambiente:
+1. **Repositório público.** Não há segredo no plugin — são padrões de trabalho. Público, o clone funciona em qualquer superfície. Leitura pública não dá escrita a ninguém.
+2. **Token de leitura no ambiente.** *Fine-grained token* com **Contents: Read-only** só neste repositório, guardado como variável do ambiente, e no script de setup, antes das duas linhas:
    ```bash
    git config --global \
      url."https://x-access-token:${SANCO_PLUGIN_TOKEN}@github.com/sancompany/Plugin_san-co".insteadOf \
      "https://github.com/sancompany/Plugin_san-co"
    ```
-   Vale lembrar: **quem usa o ambiente consegue ler as variáveis dele**. Um token só de leitura, só deste repositório, é o menor estrago possível — mas é um token exposto ao time.
-3. **Copiar as skills para dentro de cada projeto** (`.claude/skills/`). Funciona, e é exatamente o que a esteira não quer: nove cópias para atualizar à mão a cada versão. Só faz sentido como remendo temporário.
+   Com a ressalva: **quem usa o ambiente consegue ler as variáveis dele**.
+3. **Copiar as skills para dentro de cada projeto** (`.claude/skills/`). Funciona — skill commitada sempre carrega — e é exatamente o que a esteira não quer: nove cópias para atualizar à mão a cada versão.
 
-A recomendação é a **1**. O detalhamento de quem pode o quê está em [acessos.md](acessos.md).
+A recomendação é a **1**. Quem pode o quê está em [acessos.md](acessos.md).
 
-## O que não vem junto
+## O que não existe na sessão de nuvem
 
-- **`/plugin`, `/plugin install`, `/plugin marketplace`**: comandos de terminal, não existem na sessão de nuvem. Toda a configuração é pelo arquivo commitado.
-- **Plugin habilitado só no `~/.claude/settings.json` da sua máquina**: fica na sua máquina. Tem que estar no `.claude/settings.json` do repositório.
-- **Servidores LSP de plugins**: a nuvem não os inicia. O `san-co` não usa LSP, então não muda nada aqui.
+- **`/plugin`** e a sua interface: são do terminal. Aqui tudo passa pelo script do ambiente ou pelo `claude plugin` no Bash.
+- **Plugin habilitado só no `~/.claude/settings.json` da sua máquina**: fica na sua máquina.
+- **Servidores LSP de plugin**: a nuvem não os inicia. O `san-co` não usa LSP.
 
 ## Resumo para colar no chat de um colega
 
-> No repositório do projeto, crie `.claude/settings.json` com `extraKnownMarketplaces` apontando para `sancompany/Plugin_san-co` e `enabledPlugins` com `"san-co@san-co": true`. Commita e sobe. A partir da próxima sessão de nuvem o plugin entra sozinho, sempre na última versão. O arquivo pronto está em `exemplos/projeto-claude-settings.json` do repositório do plugin.
+> Abra claude.ai/code, escolha o ambiente, engrenagem, campo **Setup script**, e ponha estas duas linhas:
+> ```
+> claude plugin marketplace add sancompany/Plugin_san-co
+> claude plugin install san-co@san-co
+> ```
+> A partir da próxima sessão, todo projeto daquele ambiente abre com as nove skills `san-co:*`. Só o `.claude/settings.json` no projeto **não** instala na nuvem — ele serve ao Claude Code do terminal.

@@ -22,11 +22,13 @@ Quem publica: **o dono do repositório**. Quem usa, não publica — ver [acesso
 
 | Superfície | Como a versão chega | Quando |
 |---|---|---|
-| **Sessões de nuvem** (claude.ai/code, app, Claude Tag, rotinas) | instalação limpa do marketplace no início de cada sessão | **na próxima sessão**, sem ação de ninguém |
+| **Sessões de nuvem** (claude.ai/code, app, Claude Tag, rotinas) | o script de setup do ambiente instalou o plugin; o ambiente guarda um snapshot do disco e as sessões seguintes partem dele | na próxima sessão **depois que o snapshot for refeito** — editar o script de setup (a linha `# san-co <versão>`) força isso na hora; senão, sozinho em ~7 dias |
 | **Claude Code no terminal / VS Code** | `/plugin marketplace update san-co`, ou auto-update ligado no marketplace | quando a pessoa atualiza, ou na sessão seguinte se o auto-update estiver ligado |
 | **Cowork** | baixar o `san-co.plugin` da release e instalar | à mão, sempre |
 
-A sessão de nuvem é a única que se atualiza sozinha, e é por isso que ela é o caminho recomendado para o time.
+**Publicou versão e quer que entre hoje:** edite o campo **Setup script** do ambiente em claude.ai/code — mudar a linha do comentário com a versão já basta. É o único gesto manual do ciclo, é do mantenedor, e vale para todo mundo daquele ambiente de uma vez.
+
+O detalhe de por que é assim — e por que o `.claude/settings.json` do projeto não instala sozinho na nuvem — está em [instalar-nuvem.md](instalar-nuvem.md).
 
 ## A CI confere
 

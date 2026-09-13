@@ -17,17 +17,19 @@ Plugin_san-co/
 
 | Onde | Como | Documento |
 |---|---|---|
-| **Claude Code na nuvem** (claude.ai/code, app, Claude Tag) | `.claude/settings.json` no repositório do projeto — instala sozinho a cada sessão | [docs/instalar-nuvem.md](docs/instalar-nuvem.md) |
+| **Claude Code na nuvem** (claude.ai/code, app, Claude Tag) | duas linhas no **script de setup do ambiente** — vale para todo projeto daquele ambiente | [docs/instalar-nuvem.md](docs/instalar-nuvem.md) |
 | **Claude Code no terminal / VS Code** | `/plugin marketplace add sancompany/Plugin_san-co` e `/plugin install san-co@san-co` | [docs/instalar-terminal.md](docs/instalar-terminal.md) |
 | **Cowork** | arquivo `san-co.plugin` da última release | [docs/instalar-cowork.md](docs/instalar-cowork.md) |
 
-O caminho mais curto, para um projeto já nascer com o plugin em **qualquer** superfície de código, é copiar [`exemplos/projeto-claude-settings.json`](exemplos/projeto-claude-settings.json) para o `.claude/settings.json` do projeto e commitar.
+O caminho mais curto na nuvem é o script de setup do ambiente ([`exemplos/setup-ambiente-nuvem.sh`](exemplos/setup-ambiente-nuvem.sh)) — uma configuração por pessoa, não uma por projeto. No terminal e no VS Code, copiar [`exemplos/projeto-claude-settings.json`](exemplos/projeto-claude-settings.json) para o `.claude/settings.json` do projeto e commitar.
+
+**Atenção:** só o `.claude/settings.json` **não** instala o plugin numa sessão de nuvem — ele registra o marketplace e habilita o plugin, mas a sessão abre sem as skills. O porquê, testado, está em [docs/instalar-nuvem.md](docs/instalar-nuvem.md).
 
 ## Atualizar
 
 Quem lança versão: ver [docs/atualizar.md](docs/atualizar.md). Regra que não se negocia: **subiu conteúdo em `plugins/san-co/`, sobe o `version` no `plugin.json`** — é o `version` que faz a atualização chegar em quem já tem o plugin instalado. A CI recusa o pull request que esquecer.
 
-Quem só usa: não faz nada nas sessões de nuvem (cada sessão já nasce com a última versão); no terminal, `/plugin marketplace update san-co`.
+Quem só usa: no terminal, `/plugin marketplace update san-co`. Na nuvem, nada — a versão entra quando o mantenedor mexe no script de setup do ambiente, o que refaz o snapshot ([docs/instalar-nuvem.md](docs/instalar-nuvem.md)).
 
 ## Acessos
 

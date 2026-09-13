@@ -1,5 +1,11 @@
 # Trechos prontos
 
+## `setup-ambiente-nuvem.sh`
+
+As duas linhas que instalam o plugin nas **sessões de nuvem**. Vão no campo **Setup script** do ambiente em [claude.ai/code](https://claude.ai/code) (seletor de ambiente → engrenagem), porque é o único lugar que roda antes de o Claude Code subir. Uma vez por pessoa; vale para todo projeto daquele ambiente.
+
+Só o `.claude/settings.json` abaixo **não** resolve a nuvem — ver [`docs/instalar-nuvem.md`](../docs/instalar-nuvem.md).
+
 ## `projeto-claude-settings.json`
 
 O `.claude/settings.json` de um projeto que nasce com o plugin `san-co`. Copie para o repositório **do projeto**:
@@ -15,4 +21,4 @@ O `curl` acima só funciona com o repositório público; com ele privado, copie 
 
 **Se o projeto já tem `.claude/settings.json`**, não substitua: acrescente as chaves `extraKnownMarketplaces` e `enabledPlugins` ao objeto existente.
 
-Vale para as duas superfícies de código ao mesmo tempo — a sessão de nuvem instala sozinha no início de cada sessão, e o Claude Code do terminal adiciona o marketplace assim que a pessoa confia na pasta. O porquê está em [`docs/instalar-nuvem.md`](../docs/instalar-nuvem.md).
+Serve ao Claude Code **do terminal e do VS Code**: o marketplace é adicionado assim que a pessoa confia na pasta, e o plugin já entra habilitado. Na nuvem ele registra e habilita, mas não instala — quem instala lá é o script de setup do ambiente.
