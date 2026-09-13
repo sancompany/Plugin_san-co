@@ -64,6 +64,8 @@ Se o ambiente usa acesso **Personalizado** (`Custom`) com lista própria de dom�
 
 ## Se este repositório for privado
 
+**Hoje ele é público, então nada aqui se aplica** — o clone do marketplace funciona em qualquer sessão, sem credencial. Esta seção existe para o dia em que alguém pensar em fechar o repositório.
+
 A sessão de nuvem fala com o GitHub por um proxy que usa credencial **restrita aos repositórios anexados à sessão**. O repositório do plugin não é o repositório do projeto, então o clone do marketplace privado pode voltar 403.
 
 Três saídas, da mais simples para a mais trabalhosa:

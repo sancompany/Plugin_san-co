@@ -28,17 +28,19 @@ Com isso, a única porta para as sessões do time é: pull request → CI verde 
 
 ## Público ou privado?
 
+**Hoje este repositório é público** — e é a escolha certa, pelo que vem abaixo. O que segue explica o porquê e o que muda se um dia ele fechar.
+
 **Privado** é o padrão de reflexo, e aqui ele custa caro numa superfície específica: a sessão de nuvem fala com o GitHub por um proxy cuja credencial só alcança **os repositórios anexados à sessão**. O repositório do plugin não é o repositório do projeto, então o clone do marketplace pode voltar 403 e o plugin não instalar — que é justamente o automatismo que se quer ter.
 
 **Público** resolve isso sem abrir nada: leitura pública **não** dá escrita a ninguém. Quem publica continua sendo só quem tem Maintain e passa pela `main` protegida. O que fica visível é o conteúdo do plugin — padrões de trabalho, a esteira, as leis, as obrigações legais. Não há chave, segredo, dado de cliente nem código de produção aí dentro.
 
-Antes de tornar público, uma varredura de dois minutos:
+A varredura que confirma isso, a repetir sempre que entrar conteúdo novo:
 
 ```bash
 grep -rniE "senha|token|secret|api[_-]?key|sk-|BEGIN .*PRIVATE KEY" plugins/san-co/
 ```
 
-O que aparecer tem que ser **menção a conceito** (a reference de derivação de senha, por exemplo), nunca valor real. Confirmado isso, público é a escolha melhor.
+O que aparecer tem que ser **menção a conceito** — nome de variável, flag de CLI, a reference de derivação de senha — nunca valor real. Na publicação inicial isso foi conferido: nenhuma credencial, só conceito.
 
 Se ainda assim precisar ficar privado, o caminho para a nuvem continuar automática é o token de leitura no script de setup do ambiente, descrito em [instalar-nuvem.md](instalar-nuvem.md#se-este-repositório-for-privado) — com a ressalva que está lá: **quem usa o ambiente consegue ler as variáveis dele**.
 
