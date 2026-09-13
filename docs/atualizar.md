@@ -11,12 +11,12 @@ Quem publica: **o dono do repositório**. Quem usa, não publica — ver [acesso
    - mudança que altera a esteira → primeiro número (`2.0.0`)
 3. **Anotar** a linha no [CHANGELOG.md](../CHANGELOG.md).
 4. **Commitar e subir** para `main` (pela branch e pull request, ver abaixo).
-5. **Marcar a versão** para gerar o `.plugin` do Cowork:
+5. **Marcar a versão** para gerar o `.plugin` do Cowork, de um jeito ou de outro:
    ```bash
    git tag v1.2.3
    git push origin v1.2.3
    ```
-   A CI empacota `plugins/san-co/` e publica a release com o `san-co.plugin` anexado.
+   Ou, sem sair do navegador: **Actions → publicar → Run workflow**, deixando o campo de versão em branco. O workflow lê o `version` do `plugin.json`, cria a tag e publica a release com o `san-co.plugin` anexado. Sessão de nuvem publica por aqui: o proxy do GitHub nas sessões só deixa subir branch, não tag.
 
 ## O que acontece depois, em cada superfície
 

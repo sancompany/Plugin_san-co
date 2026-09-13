@@ -3,6 +3,12 @@ name: publicar
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "Versão a publicar (em branco = a do plugin.json)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -16,15 +22,23 @@ jobs:
       - name: Estrutura do marketplace e do plugin
         run: python3 scripts/validar.py
 
-      - name: A tag tem que bater com o version do plugin.json
+      - name: Qual versão publicar
+        id: versao
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          versao="$(python3 -c "import json;print(json.load(open('plugins/san-co/.claude-plugin/plugin.json'))['version'])")"
-          if [ "$tag" != "$versao" ]; then
-            echo "ERRO: tag v$tag não bate com o version $versao do plugin.json." >&2
+          plugin="$(python3 -c "import json;print(json.load(open('plugins/san-co/.claude-plugin/plugin.json'))['version'])")"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            pedida="${GITHUB_REF_NAME#v}"
+          else
+            pedida="${{ inputs.versao }}"
+            pedida="${pedida#v}"
+            [ -n "$pedida" ] || pedida="$plugin"
+          fi
+          if [ "$pedida" != "$plugin" ]; then
+            echo "ERRO: pedida a versão $pedida, mas o plugin.json diz $plugin." >&2
             exit 1
           fi
-          echo "OK — v$tag."
+          echo "tag=v$plugin" >> "$GITHUB_OUTPUT"
+          echo "OK — publicando v$plugin."
 
       - name: Empacota o .plugin do Cowork
         run: ./scripts/empacotar-plugin.sh
@@ -32,7 +46,14 @@ jobs:
       - name: Publica a release com o .plugin anexado
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.versao.outputs.tag }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/san-co.plugin \
-            --title "san-co $GITHUB_REF_NAME" \
-            --generate-notes
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG já existe; substituindo o anexo."
+            gh release upload "$TAG" dist/san-co.plugin --clobber
+          else
+            gh release create "$TAG" dist/san-co.plugin \
+              --target "$GITHUB_SHA" \
+              --title "san-co $TAG" \
+              --generate-notes
+          fi
