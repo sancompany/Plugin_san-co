@@ -1,0 +1,13 @@
+{
+  "name": "san-co",
+  "owner": {
+    "name": "San & Co."
+  },
+  "plugins": [
+    {
+      "name": "san-co",
+      "source": "./plugins/san-co",
+      "description": "Padrões e ciclo de trabalho da San & Co.: esteira de sete estações, onze leis, conformidade obrigatória, mapa de desenvolvimento web por tipo de projeto, prontidão operacional, obrigações legais brasileiras, integração ao San Checkout e segurança."
+    }
+  ]
+}

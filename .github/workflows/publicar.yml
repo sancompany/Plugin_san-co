@@ -1,0 +1,38 @@
+name: publicar
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Estrutura do marketplace e do plugin
+        run: python3 scripts/validar.py
+
+      - name: A tag tem que bater com o version do plugin.json
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          versao="$(python3 -c "import json;print(json.load(open('plugins/san-co/.claude-plugin/plugin.json'))['version'])")"
+          if [ "$tag" != "$versao" ]; then
+            echo "ERRO: tag v$tag não bate com o version $versao do plugin.json." >&2
+            exit 1
+          fi
+          echo "OK — v$tag."
+
+      - name: Empacota o .plugin do Cowork
+        run: ./scripts/empacotar-plugin.sh
+
+      - name: Publica a release com o .plugin anexado
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/san-co.plugin \
+            --title "san-co $GITHUB_REF_NAME" \
+            --generate-notes
