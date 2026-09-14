@@ -4,6 +4,10 @@ Referência do modo aceleração ("Antes de chamar de trabalho humano") e do dep
 
 Duas leis continuam por cima: a **lista curta** (segredo, permissão, autenticação, dinheiro, migration destrutiva pedem permissão mesmo com o comando na mão) e a **Lei 6** (schema nunca por `DATABASE_URL`). Automatizável não é autorizado. Estado conferido em setembro de 2026 nas docs oficiais.
 
+**Na San & Co., isto não é capacidade teórica — está configurado.** GitHub, Supabase, Cloudflare e Northflank têm credencial de conta ativa no ambiente de sessão desde setembro de 2026; a tabela "O que o dono configura uma vez", ao final desta referência, é o estado real, não uma sugestão. Criar repositório, provisionar banco, fazer deploy e configurar domínio são parte do fluxo normal da estação — a sessão testa e lança sozinha, sem pedido separado e sem o dono precisar sair daqui para clicar em algo que uma API já alcança. Isso não move a lista curta um milímetro: dinheiro, segredo/autenticação, migration destrutiva e as outras duas linhas pedem permissão do mesmo jeito, tenha a credencial o alcance que tiver.
+
+**A credencial alcança a conta inteira; a sessão não.** Nenhuma delas tem escopo por projeto — o mesmo `GH_TOKEN` abre os sete repositórios da conta, o mesmo `SUPABASE_ACCESS_TOKEN` abre todo projeto Supabase, a mesma Cloudflare Global Key abre toda zona, o mesmo `NORTHFLANK_TOKEN` abre todo serviço. **Escrever, criar ou apagar é só no que é do projeto desta sessão; em qualquer outro repositório, banco, zona ou serviço que a credencial alcançar, é só leitura** — mesma regra do isolamento de banco da skill `classificar`, um nível acima: lá é o código de um projeto nunca lendo o banco de outro; aqui é a sessão nunca escrevendo fora do projeto que está construindo, ainda que a chave tecnicamente deixe. "O projeto desta sessão" é o que a estação 2 (`classificar`) e a estação 3 (fundação) registraram como dele — nome do repositório, `project_ref` do Supabase, zona/domínio da Cloudflare, id do projeto Northflank — e é contra esse nome que se confere antes de qualquer chamada de escrita, não contra o que a credencial permitiria. Precisar tocar noutro projeto (ler config dele, por exemplo) é read-only por definição; precisar escrever nele é fora desta sessão — abre-se uma sessão daquele projeto, ou pergunta-se ao dono.
+
 ## GitHub
 
 | Ação | Como o agente faz | Antes |
@@ -61,7 +65,7 @@ Duas leis continuam por cima: a **lista curta** (segredo, permissão, autentica�
 
 | Ação | Como o agente faz | Antes |
 |---|---|---|
-| Autenticar sem navegador | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` no ambiente (token sobrepõe profile); testar: `GET /user/tokens/verify` | token criado pelo dono (My Profile > API Tokens ou token de conta) |
+| Autenticar sem navegador | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` no ambiente (token sobrepõe profile); testar: `GET /user/tokens/verify`. **Em uso na San & Co.:** `CLOUDFLARE_EMAIL` + `CLOUDFLARE_API_KEY` — a Global API Key, mecanismo mais antigo; mesmas chamadas de API e o `wrangler` aceita as duas, mas o header muda (`X-Auth-Email` + `X-Auth-Key`, não `Authorization: Bearer`) e `GET /user/tokens/verify` não serve para confirmar essa forma — usar qualquer chamada simples, como `GET /accounts` | token criado pelo dono (My Profile > API Tokens ou token de conta); Global Key na mesma tela, botão "View" |
 | Worker | `wrangler deploy`; antes de autenticar, `wrangler deploy --temporary` | **Workers Scripts: Edit** (template "Edit Cloudflare Workers") |
 | Pages | `wrangler pages project create <nome> --production-branch main`; `wrangler pages deploy ./dist --project-name <nome> --branch main` | **Cloudflare Pages: Edit** |
 | Segredo | `wrangler secret put NOME` (stdin); `wrangler secret bulk segredos.json`; Pages: `wrangler pages secret put NOME --project-name <nome>` | token do deploy |
@@ -84,7 +88,7 @@ Duas leis continuam por cima: a **lista curta** (segredo, permissão, autentica�
 - Política Access legada (dentro do app) está sendo aposentada; criar a reutilizável e referenciar por `id`.
 - `wrangler pages deploy` em projeto conectado ao Git faz deploy paralelo à integração; um caminho por projeto, escrito no `RUNBOOK.md`.
 - Cloudflare aponta Workers com assets estáticos para projeto novo; Pages funciona, mas a doc nova é de Workers.
-
+- **Global API Key não tem escopo** — não dá para limitar a uma zona ou uma permissão, é a conta inteira ou nada. Girar (trocar) é My Profile > API Tokens > Global API Key > Change; não existe revogar uma chamada específica como num token.
 ## Northflank
 
 | Ação | Como o agente faz | Antes |
@@ -139,7 +143,7 @@ Recusa por falta de permissão **não vira "só o dono faz"**. A sessão para e 
 | GitHub local | `gh auth refresh -s workflow` | máquina do dono |
 | Supabase PAT | conta inteira (sem escopo por projeto; `project_ref` e `link` restringem) | secret `SUPABASE_ACCESS_TOKEN` no repositório + variável da sessão |
 | Supabase, por projeto | senha do banco; `ref` | secrets `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID` |
-| Cloudflare token de conta | Account: Workers Scripts, Cloudflare Pages, Workers KV Storage, D1, Workers R2 Storage, Access: Apps and Policies, Turnstile — **Edit**; todas as zonas: DNS **Edit**, Single Redirect **Edit**, Cache Purge, Zone **Read** | secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` + variável da sessão |
+| Cloudflare token de conta | Account: Workers Scripts, Cloudflare Pages, Workers KV Storage, D1, Workers R2 Storage, Access: Apps and Policies, Turnstile — **Edit**; todas as zonas: DNS **Edit**, Single Redirect **Edit**, Cache Purge, Zone **Read** | secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` + variável da sessão. **Na San & Co., em uso: `CLOUDFLARE_EMAIL` + `CLOUDFLARE_API_KEY` (Global API Key) — sem lista de permissão para configurar, porque não tem escopo: é a conta inteira** |
 | Northflank token | API role: criar/ler/escrever projetos, serviços, addons, secret groups, templates | variável `NORTHFLANK_TOKEN` da sessão |
 | GitHub Apps de Cloudflare, Supabase e Northflank | instalados uma vez, "todos os repositórios" | conta GitHub |
 | Zero Trust ativo; domínio raiz na Cloudflare | — | conta Cloudflare |
