@@ -1,6 +1,6 @@
 # San & Co.
 
-Os padrões e o ciclo de trabalho da San & Co., empacotados como skills. Desenhado para ser o **único plugin ativo** — cobre da ideia ao lançamento, e do lançamento à versão seguinte, sem depender de pacotes genéricos.
+Os padrões e o ciclo de trabalho da San & Co., empacotados como skills. Desenhado para ser o **único plugin de processo ativo** — cobre da ideia ao lançamento, e do lançamento à versão seguinte, sem depender de pacotes genéricos. **Plugin de plataforma é exceção**: o oficial da Northflank (`northflank/skills`) entrega comandos de deploy, banco e ambiente de preview, não regra de trabalho, e convive sem disputar autoridade — quem manda na ordem das estações continua sendo este plugin.
 
 ## Skills
 

@@ -96,7 +96,7 @@ Duas leis continuam por cima: a **lista curta** (segredo, permissão, autentica�
 | IaC | template JSON (`spec.kind: Workflow`, `$schema: https://api.northflank.com/v1/schemas/template`); `POST /v1/templates` (permissão **Templates > General > Create**); GitOps: `/Northflank.json` no repositório com "run automatically" | Git ligado para GitOps |
 | Preview por PR | Preview Blueprint com gatilho Git; API `preview-blueprints` | Git ligado |
 | API | `https://api.northflank.com/v1/`, `Bearer <token>`, 1.000 req/h | token |
-| MCP | **não há servidor oficial** em setembro de 2026; o oficial é o plugin de skills (`claude plugin marketplace add northflank/skills`; `claude plugin install northflank@northflank`), que usa o CLI | CLI logado |
+| Conectar ao Claude Code | **não há MCP oficial** (setembro de 2026; o que existe de MCP é de terceiro). O caminho oficial é o plugin de skills: `/plugin marketplace add northflank/skills` e `/plugin install northflank@northflank` — ele dirige o CLI, então o CLI precisa estar instalado e logado | `npm i -g @northflank/cli` + `northflank login -t <TOKEN>` |
 
 **Só o dono:** ligar GitHub/GitLab/Bitbucket (Integrations) — sem isso não há build on push, GitOps nem preview; cartão (a doc de preços exige forma de pagamento antes de criar recurso, mesmo no Sandbox gratuito: 2 serviços, 2 jobs, 1 addon, não é para produção); criar token e API role.
 

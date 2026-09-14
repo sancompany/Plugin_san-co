@@ -2,6 +2,11 @@
 
 O `version` do `plugins/san-co/.claude-plugin/plugin.json` é a fonte da verdade; esta lista é a leitura humana dela.
 
+## 1.2.3 — plugin de plataforma não é plugin de processo
+
+- README do plugin: "único plugin ativo" → "único plugin de processo ativo", com a exceção escrita — plugin de plataforma (como o oficial da Northflank, `northflank/skills`) entrega comando, não regra de trabalho, e não disputa autoridade sobre a esteira.
+- `leis/references/automacao-plataformas.md`: a linha da Northflank sobre conectar ao Claude Code, antes só "não há MCP oficial", agora traz os dois comandos de instalação do plugin de skills e o pré-requisito do CLI logado.
+
 ## Correção da documentação de instalação na nuvem
 
 Sem mudança no plugin (segue 1.2.2). O que mudou foi o que os documentos afirmavam:
